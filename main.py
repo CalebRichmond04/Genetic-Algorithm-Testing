@@ -21,32 +21,49 @@ def printTrain(train):
 ###############Functions you will write ###########
 
 # 1. compute fitness of solution.
+
 def computeFitness(train):
     pass
+    fitness = 0
 
     #determin fitsness by profits.
     #ensures if the train is late or early it will affect the profits by a certain percentage
-    #if no engine exists no profits can be made because the train cant move
-    return profits(train) * computeLatence(train)
+    #ensure there is at least 1 of each train car if not that train has 0 profit
+    fitness += profits(train) * computeLatence(train) * computeCarRequirment(train) * computeBathRequirment(train) * computeDiningRequirment(train)
+    return fitness
+
 
 def profits(train):
     pass
     profit = 0
     #finds the profit from each passenger by the class type
-    #incorporate the actual number of passengers in each class to make it more accurate
-    for i in train:
-        if i == '1':
-            profit += firstTicket * (firstPassengers)
-        elif i == '2':
-            profit += secondTicket * (secondPassengers) 
-        elif i == '3':
-            profit += thirdTicket * (thirdPassengers)
+
+    #incorporates the actual number of passengers in each class to ensure accurate trains
+    #counts the number of each class of passanger cars, calcs actual seats available
+    #takes the amount of passangers the train can hold of each class based on availableSeats
+
+
+    #This is working but could incorporate the actual passanger function 
+    numFirstCars = train.count('1')
+    availableSeats = numFirstCars * firstPassengers
+    actualPassengers = min(numFirst, availableSeats)
+    profit += actualPassengers * firstTicket
+
+    numSecondCars = train.count('2')
+    availableSeats = numSecondCars * secondPassengers
+    actualPassengers = min(numSecond, availableSeats)
+    profit += actualPassengers * secondTicket
+
+    numThirdCars = train.count('3')
+    availableSeats = numThirdCars * thirdPassengers
+    actualPassengers = min(numThird, availableSeats)
+    profit += actualPassengers * thirdTicket
+
     #subtracts the cost of each engine from the profit
     profit -= engineCost*train.count('E')
     return profit
 
-#if engine less than requried late by 10 minuets
-#if egnine more than requried early by 10 minuets
+
 def computeLatence(train):
     pass
     timeliness = 0
@@ -74,16 +91,75 @@ def computeLatence(train):
     return timeliness
 
 
+#ensures at least 1 of every car exists in the train if not pass 0 so no profit for that train, if all exist pass 1 train is good
+def computeCarRequirment(train):
+    if ('1' not in train or
+        '2' not in train or
+        '3' not in train or
+        'D' not in train or
+        'B' not in train or
+        'E' not in train):
+        return 0
+    return 1
+
+
+def computeDiningRequirment(train):
+    firstPassengers, secondPassengers, thirdPassengers = computeActualPassangers(train)
+
+    numPassangers = firstPassengers + secondPassengers + thirdPassengers 
+    numDining = train.count('D')
+    actualDining = min(numDining, numPassangers)
+
+    if actualDining < numDining:
+        return 0.7
+    elif actualDining == numDining:
+        return 1
+    elif actualDining > numDining:
+        return 0.9
+
+
+def computeBathRequirment(train):
+    firstPassengers, secondPassengers, thirdPassengers = computeActualPassangers(train)
+
+    numPassangers = firstPassengers + secondPassengers + thirdPassengers 
+    numBath= train.count('B')
+    actualBath = min(numBath, numPassangers)
+
+    if actualBath < numBath:
+        return 0.7
+    elif actualBath == numBath:
+        return 1
+    elif actualBath > numBath:
+        return 0.9
+    
+
+#helper function to declutter code to calculate the actual number of passangers possible in a train
+def computeActualPassangers(train):
+    # First class
+    firstCapacity = train.count('1') * firstPassengers
+    actualFirst = min(numFirst, firstCapacity)
+
+    # Second class
+    secondCapacity = train.count('2') * secondPassengers
+    actualSecond = min(numSecond, secondCapacity)
+
+    # Third class
+    thirdCapacity = train.count('3') * thirdPassengers
+    actualThird = min(numThird, thirdCapacity)
+
+    return actualFirst, actualSecond, actualThird
 
 
 # 2. selection: Select two individuals from current generation
+
 #simple appaoch where it will grab the first train in the population then compare it to next one in line 
 #if number is greater then currrent parent 1 change that train to parent 1
-#parent 2 will be the the first train in the population assuming the parent 1 still insent train 1
+#parent 2 will be the the first train in the population assuming the parent 1 isn't train 1
 #then runs the same checks and ensure that parent 2 doesnt equal parent 1
 #if it does it skips that train and moves to the next one in population
 def select(currentPopulation):
     pass
+
 #parent 1 calc
     parent1 = currentPopulation[0]
     bestFitness = computeFitness(parent1)
@@ -94,7 +170,20 @@ def select(currentPopulation):
             bestFitness = currentFitness
 
 #parent 2 calc
+    if parent1 != currentPopulation[0]:
+        parent2 = currentPopulation[0]
+    else:
+        parent2 = currentPopulation[1]
+    bestFitness = computeFitness(parent2)
+    for train in currentPopulation:
+        currentFitness = computeFitness(train)
+        if train == parent1:
+            continue
+        elif currentFitness > bestFitness:
+            parent2 = train
+            bestFitness = currentFitness
 
+    return parent1, parent2
 
 
 # 3. crossover (takes two individuals and returns one or more 
@@ -136,6 +225,11 @@ engineCost=1500
 numFirst=firstPassengers*10
 numSecond=secondPassengers*12
 numThird=thirdPassengers*20
+
+
+#Num of passangers each car can serve
+numDining = 30
+numBath = 20
 
 currentPopulation=generateInitialPopulation()
 printTrain(currentPopulation[0])
