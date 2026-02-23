@@ -157,6 +157,12 @@ def computeActualPassangers(train):
 #parent 2 will be the the first train in the population assuming the parent 1 isn't train 1
 #then runs the same checks and ensure that parent 2 doesnt equal parent 1
 #if it does it skips that train and moves to the next one in population
+
+#after testing and reserch it showd that my generations finished very early in because it always looked at the 2 best parents
+#so the only chnage was mutation
+#this old parent 2 code is ocmmented out
+#new parent 2 code choices a random train in the population that is not parent 1, hopefully adding morer variation to the population
+
 def select(currentPopulation):
     pass
 
@@ -169,19 +175,31 @@ def select(currentPopulation):
             parent1 = train
             bestFitness = currentFitness
 
-#parent 2 calc
-    if parent1 != currentPopulation[0]:
-        parent2 = currentPopulation[0]
-    else:
-        parent2 = currentPopulation[1]
-    bestFitness = computeFitness(parent2)
-    for train in currentPopulation:
-        currentFitness = computeFitness(train)
-        if train == parent1:
-            continue
-        elif currentFitness > bestFitness:
-            parent2 = train
-            bestFitness = currentFitness
+    # -------------------------
+    # OLD Parent 2 Calculation (Second Best fit parent)
+    # -------------------------
+    # if parent1 != currentPopulation[0]:
+    #     parent2 = currentPopulation[0]
+    # else:
+    #     parent2 = currentPopulation[1]
+    #
+    # bestFitness = computeFitness(parent2)
+    # for train in currentPopulation:
+    #     currentFitness = computeFitness(train)
+    #     if train == parent1:
+    #         continue
+    #     elif currentFitness > bestFitness:
+    #         parent2 = train
+    #         bestFitness = currentFitness
+
+
+    # -------------------------
+    # NEW Parent 2 (Random, Not Parent 1)
+    # -------------------------
+    while True:
+        parent2 = random.choice(currentPopulation)
+        if parent2 != parent1:
+            break
 
     return parent1, parent2
 
@@ -190,11 +208,26 @@ def select(currentPopulation):
 # individuals created from crossover). You may choose your crossover
 # approach
 def crossover(train1, train2):
-    pass
+    
+    crossover = random.randint(1, trainSize - 1)
+    child = train1[:crossover] + train2[crossover:]
+
+    return child
 
 # 4. mutation (takes one individual and returns a possible mutation)
 def mutate(train):
-    pass
+    
+    mutationChance = 0.2 #change this value to increase or decrease mutation rate
+    #check if mutation happens
+    if random.random() < mutationChance:
+        #random car to mutate
+        mutationPoint = random.randint(0, trainSize - 1)
+        #random new car to replace it with
+        newGene = random.choice(allowedLetters)
+        #create new train with mutation
+        train = (train[:mutationPoint] + newGene + train[mutationPoint + 1:])
+    return train
+
 
 # 5. create new generation: this function will call the previous
 # functions. It should repeatedly select
@@ -202,14 +235,25 @@ def mutate(train):
 # and it should create a new generation which will be an
 # an array of new train strings
 def newGeneration(currentPopulation):
-    pass
+    newGeneration = []
+    while len(newGeneration) < populationSize:
+        #grabs the 2 best parents
+        parent1, parent2 = select(currentPopulation)
+        #crosses the two best parents to make a child from them
+        child = crossover(parent1, parent2)
+        #mutates the child to add some variation to the population
+        child = mutate(child)
+        #adds the child to the new generation
+        newGeneration.append(child)
+
+    return newGeneration
 
 
 ###########################
 # parameters that can be adjusted 
 trainSize=20 #number of cars in the train
 populationSize=1000 #number of trains in population
-numGenerations=1 #number of generations to run
+numGenerations=10 #number of generations to run
 firstPassengers=10 #number of passengers a first class car carries
 secondPassengers=24 #number of passengers a second class car carries
 thirdPassengers=50 #number of passengers a third class car carries
@@ -219,7 +263,7 @@ firstTicket=1500
 secondTicket=500
 thirdTicket=200
 #price per engine
-engineCost=1500
+engineCost=15000
 
 # for now make these a multiple of the number of passengers a car will hold 
 numFirst=firstPassengers*10
@@ -235,3 +279,6 @@ currentPopulation=generateInitialPopulation()
 printTrain(currentPopulation[0])
 for i in range(numGenerations):
     currentPopulation=newGeneration(currentPopulation)
+    best = max(currentPopulation, key=computeFitness)
+    print("Best fitness:", computeFitness(best))
+    printTrain(best)
